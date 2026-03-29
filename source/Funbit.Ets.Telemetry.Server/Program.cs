@@ -15,6 +15,7 @@ namespace Funbit.Ets.Telemetry.Server
         private const int ErrorAlreadyExists = 183;
 
         public static bool UninstallMode;
+        public static bool InternalMode;
 
         /// <summary>
         /// The main entry point for the application.
@@ -22,6 +23,15 @@ namespace Funbit.Ets.Telemetry.Server
         [STAThread]
         static void Main(string[] args)
         {
+            UninstallMode = args.Length >= 1 && args.Any(a => a.Trim() == "-uninstall");
+            InternalMode = args.Length >= 1 && args.Any(a => a.Trim() == "-internal");
+            if (!InternalMode)
+            {
+                var internalModeFromEnv = Environment.GetEnvironmentVariable("ANDESMP_INTERNAL_MODE");
+                InternalMode = string.Equals(internalModeFromEnv, "1", StringComparison.OrdinalIgnoreCase) ||
+                               string.Equals(internalModeFromEnv, "true", StringComparison.OrdinalIgnoreCase);
+            }
+
             // check if another instance is running
             CreateMutex(0, -1,
                 Uac.IsProcessElevated()
@@ -30,8 +40,11 @@ namespace Funbit.Ets.Telemetry.Server
             bool bAnotherInstanceRunning = GetLastError() == ErrorAlreadyExists;
             if (bAnotherInstanceRunning)
             {
-                MessageBox.Show(@"Another ETS2/ATS Telemetry Server instance is already running!", @"Warning",
-                    MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+                if (!InternalMode)
+                {
+                    MessageBox.Show(@"Another ETS2/ATS Telemetry Server instance is already running!", @"Warning",
+                        MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+                }
                 return;
             }
 
@@ -39,8 +52,6 @@ namespace Funbit.Ets.Telemetry.Server
             
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            UninstallMode = args.Length >= 1 && args.Any(a => a.Trim() == "-uninstall");
-
             Application.Run(new MainForm());
         }
     }

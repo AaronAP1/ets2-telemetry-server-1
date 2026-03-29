@@ -46,6 +46,11 @@ namespace Funbit.Ets.Telemetry.Server
         {
             try
             {
+                if (Program.InternalMode)
+                {
+                    return;
+                }
+
                 if (Program.UninstallMode && SetupManager.Steps.All(s => s.Status == SetupStatus.Uninstalled))
                 {
                     MessageBox.Show(this, @"Server is not installed, nothing to uninstall.", @"Done",
@@ -103,11 +108,21 @@ namespace Funbit.Ets.Telemetry.Server
                     broadcastTimer.Enabled = true;
                 }
 
-                // show tray icon
-                trayIcon.Visible = true;
-                
-                // make sure that form is visible
-                Activate();
+                if (Program.InternalMode)
+                {
+                    trayIcon.Visible = false;
+                    ShowInTaskbar = false;
+                    WindowState = FormWindowState.Minimized;
+                    Hide();
+                }
+                else
+                {
+                    // show tray icon
+                    trayIcon.Visible = true;
+
+                    // make sure that form is visible
+                    Activate();
+                }
             }
             catch (Exception ex)
             {
@@ -123,6 +138,12 @@ namespace Funbit.Ets.Telemetry.Server
                 Environment.Is64BitOperatingSystem ? "64-bit" : "32-bit",
                 Program.UninstallMode ? "[UNINSTALL MODE]" : "");
             Text += @" " + AssemblyHelper.Version;
+
+            if (Program.InternalMode)
+            {
+                ShowInTaskbar = false;
+                Opacity = 0;
+            }
 
             // install or uninstall server if needed
             Setup();
@@ -144,6 +165,11 @@ namespace Funbit.Ets.Telemetry.Server
 
         void trayIcon_MouseDoubleClick(object sender, MouseEventArgs e)
         {
+            if (Program.InternalMode)
+            {
+                return;
+            }
+
             WindowState = FormWindowState.Normal;
         }
 
@@ -192,6 +218,13 @@ namespace Funbit.Ets.Telemetry.Server
         
         void MainForm_Resize(object sender, EventArgs e)
         {
+            if (Program.InternalMode)
+            {
+                ShowInTaskbar = false;
+                trayIcon.Visible = false;
+                return;
+            }
+
             ShowInTaskbar = WindowState != FormWindowState.Minimized;
             if (!ShowInTaskbar && trayIcon.Tag == null)
             {
